@@ -1,0 +1,1927 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CAMPO 36H — Simulador de Intervención Psicosocial</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&family=Space+Mono:wght@400;700&display=swap');
+
+  :root {
+    --navy: #0F2240;
+    --navy2: #1A3A5C;
+    --teal: #0D7377;
+    --teal2: #14A89E;
+    --teal3: #E0F5F4;
+    --accent: #F5A623;
+    --accent2: #FFF3D6;
+    --red: #C0392B;
+    --red2: #FDECEA;
+    --green: #1A7A4A;
+    --green2: #E6F7EE;
+    --white: #FFFFFF;
+    --off: #F4F7F9;
+    --gray: #8A9BB0;
+    --dgray: #3D5166;
+    --border: #D4DDE8;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: 'Space Grotesk', sans-serif;
+    background: var(--navy);
+    color: var(--white);
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  /* ── SCREENS ── */
+  .screen { display: none; min-height: 100vh; }
+  .screen.active { display: flex; flex-direction: column; }
+
+  /* ── INTRO SCREEN ── */
+  #intro {
+    background: var(--navy);
+    align-items: center;
+    justify-content: center;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .intro-bg {
+    position: absolute; inset: 0;
+    background: radial-gradient(ellipse at 70% 30%, rgba(13,115,119,0.25) 0%, transparent 60%),
+                radial-gradient(ellipse at 20% 80%, rgba(245,166,35,0.1) 0%, transparent 50%);
+  }
+
+  .intro-content {
+    position: relative; z-index: 2;
+    text-align: center;
+    padding: 2rem;
+    max-width: 700px;
+  }
+
+  .intro-badge {
+    display: inline-block;
+    background: var(--teal);
+    color: var(--white);
+    font-family: 'Space Mono', monospace;
+    font-size: 0.7rem;
+    letter-spacing: 0.15em;
+    padding: 0.4rem 1rem;
+    border-radius: 2px;
+    margin-bottom: 1.5rem;
+  }
+
+  .intro-title {
+    font-size: clamp(3rem, 8vw, 5.5rem);
+    font-weight: 700;
+    line-height: 0.95;
+    letter-spacing: -0.03em;
+    margin-bottom: 0.5rem;
+  }
+
+  .intro-title span { color: var(--teal2); }
+
+  .intro-sub {
+    font-size: 1.1rem;
+    color: var(--gray);
+    margin-bottom: 0.5rem;
+    font-weight: 400;
+  }
+
+  .intro-case {
+    display: inline-block;
+    background: rgba(245,166,35,0.12);
+    border: 1px solid rgba(245,166,35,0.3);
+    color: var(--accent);
+    font-size: 0.85rem;
+    padding: 0.4rem 1rem;
+    border-radius: 4px;
+    margin-bottom: 2.5rem;
+  }
+
+  .intro-story {
+    background: rgba(255,255,255,0.04);
+    border: 1px solid rgba(255,255,255,0.08);
+    border-radius: 12px;
+    padding: 1.5rem;
+    text-align: left;
+    margin-bottom: 2rem;
+    font-size: 0.95rem;
+    line-height: 1.7;
+    color: #CBD8E8;
+  }
+
+  .intro-story strong { color: var(--white); }
+
+  .intro-phases {
+    display: flex;
+    gap: 0.5rem;
+    justify-content: center;
+    flex-wrap: wrap;
+    margin-bottom: 2rem;
+  }
+
+  .phase-pill {
+    background: rgba(13,115,119,0.2);
+    border: 1px solid rgba(13,115,119,0.4);
+    color: var(--teal2);
+    font-size: 0.75rem;
+    font-family: 'Space Mono', monospace;
+    padding: 0.3rem 0.7rem;
+    border-radius: 20px;
+  }
+
+  .btn-primary {
+    background: var(--teal);
+    color: var(--white);
+    border: none;
+    font-family: 'Space Grotesk', sans-serif;
+    font-size: 1rem;
+    font-weight: 600;
+    padding: 0.9rem 2.5rem;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all 0.2s;
+    letter-spacing: 0.02em;
+  }
+
+  .btn-primary:hover { background: var(--teal2); transform: translateY(-2px); }
+
+  /* ── GAME SCREEN ── */
+  #game {
+    background: var(--off);
+    color: var(--navy);
+  }
+
+  /* HUD */
+  .hud {
+    background: var(--navy);
+    padding: 0.75rem 1.5rem;
+    display: flex;
+    align-items: center;
+    gap: 1.5rem;
+    flex-wrap: wrap;
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    border-bottom: 2px solid var(--teal);
+  }
+
+  .hud-logo {
+    font-family: 'Space Mono', monospace;
+    font-size: 0.85rem;
+    color: var(--teal2);
+    font-weight: 700;
+    letter-spacing: 0.1em;
+    flex-shrink: 0;
+  }
+
+  .hud-phase {
+    font-size: 0.75rem;
+    color: var(--gray);
+    font-family: 'Space Mono', monospace;
+    flex-shrink: 0;
+  }
+
+  .hud-phase span { color: var(--accent); font-weight: 700; }
+
+  .hud-timer {
+    font-family: 'Space Mono', monospace;
+    font-size: 1rem;
+    color: var(--white);
+    font-weight: 700;
+    margin-left: auto;
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+  }
+
+  .hud-timer .timer-icon { color: var(--teal2); font-size: 0.8rem; }
+
+  .hud-score {
+    font-family: 'Space Mono', monospace;
+    font-size: 0.85rem;
+    color: var(--accent);
+    font-weight: 700;
+  }
+
+  /* PROGRESS BAR */
+  .progress-bar {
+    height: 3px;
+    background: rgba(255,255,255,0.1);
+    position: relative;
+  }
+  .progress-fill {
+    height: 100%;
+    background: linear-gradient(90deg, var(--teal), var(--teal2));
+    transition: width 0.5s ease;
+  }
+
+  /* PHASE CONTAINER */
+  .phase-container {
+    max-width: 900px;
+    margin: 0 auto;
+    padding: 2rem 1.5rem;
+  }
+
+  .phase-header {
+    margin-bottom: 1.5rem;
+  }
+
+  .phase-number {
+    font-family: 'Space Mono', monospace;
+    font-size: 0.7rem;
+    letter-spacing: 0.15em;
+    color: var(--teal);
+    font-weight: 700;
+    margin-bottom: 0.3rem;
+  }
+
+  .phase-title {
+    font-size: 1.6rem;
+    font-weight: 700;
+    color: var(--navy);
+    line-height: 1.2;
+    margin-bottom: 0.5rem;
+  }
+
+  .phase-desc {
+    font-size: 0.9rem;
+    color: var(--dgray);
+    line-height: 1.6;
+  }
+
+  /* SCENE CARD */
+  .scene-card {
+    background: var(--white);
+    border-radius: 12px;
+    border: 1px solid var(--border);
+    overflow: hidden;
+    margin-bottom: 1.5rem;
+    box-shadow: 0 2px 8px rgba(15,34,64,0.06);
+  }
+
+  .scene-img {
+    width: 100%;
+    height: 220px;
+    object-fit: cover;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 4rem;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .scene-body { padding: 1.5rem; }
+
+  .scene-situation {
+    background: var(--off);
+    border-left: 3px solid var(--teal);
+    padding: 0.8rem 1rem;
+    border-radius: 0 8px 8px 0;
+    font-size: 0.9rem;
+    color: var(--dgray);
+    line-height: 1.6;
+    margin-bottom: 1.2rem;
+  }
+
+  .scene-situation strong { color: var(--navy); }
+
+  .scene-question {
+    font-weight: 600;
+    color: var(--navy);
+    font-size: 1rem;
+    margin-bottom: 1rem;
+  }
+
+  /* OPTIONS */
+  .options-grid {
+    display: grid;
+    gap: 0.6rem;
+  }
+
+  .option-btn {
+    width: 100%;
+    text-align: left;
+    background: var(--off);
+    border: 2px solid var(--border);
+    border-radius: 8px;
+    padding: 0.8rem 1rem;
+    font-family: 'Space Grotesk', sans-serif;
+    font-size: 0.9rem;
+    color: var(--navy);
+    cursor: pointer;
+    transition: all 0.18s;
+    display: flex;
+    align-items: flex-start;
+    gap: 0.7rem;
+  }
+
+  .option-btn:hover:not(:disabled) {
+    border-color: var(--teal);
+    background: var(--teal3);
+  }
+
+  .option-btn.correct {
+    border-color: var(--green);
+    background: var(--green2);
+    color: var(--green);
+  }
+
+  .option-btn.wrong {
+    border-color: var(--red);
+    background: var(--red2);
+    color: var(--red);
+  }
+
+  .option-btn.reveal {
+    border-color: var(--green);
+    background: var(--green2);
+    opacity: 0.5;
+  }
+
+  .option-letter {
+    font-family: 'Space Mono', monospace;
+    font-size: 0.75rem;
+    font-weight: 700;
+    width: 22px;
+    height: 22px;
+    min-width: 22px;
+    border-radius: 4px;
+    background: var(--border);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--dgray);
+    margin-top: 1px;
+    transition: all 0.18s;
+  }
+
+  .option-btn.correct .option-letter { background: var(--green); color: white; }
+  .option-btn.wrong .option-letter { background: var(--red); color: white; }
+  .option-btn.reveal .option-letter { background: var(--green); color: white; }
+
+  /* FEEDBACK */
+  .feedback-box {
+    border-radius: 8px;
+    padding: 1rem 1.2rem;
+    margin-top: 1rem;
+    font-size: 0.88rem;
+    line-height: 1.6;
+    display: none;
+  }
+
+  .feedback-box.correct {
+    background: var(--green2);
+    border: 1px solid rgba(26,122,74,0.2);
+    color: var(--green);
+  }
+
+  .feedback-box.wrong {
+    background: var(--red2);
+    border: 1px solid rgba(192,57,43,0.2);
+    color: var(--red);
+  }
+
+  .feedback-title {
+    font-weight: 700;
+    margin-bottom: 0.3rem;
+    font-size: 0.9rem;
+  }
+
+  .next-btn {
+    display: none;
+    margin-top: 1rem;
+    background: var(--navy);
+    color: var(--white);
+    border: none;
+    font-family: 'Space Grotesk', sans-serif;
+    font-size: 0.9rem;
+    font-weight: 600;
+    padding: 0.7rem 1.5rem;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+
+  .next-btn:hover { background: var(--navy2); }
+
+  /* ── MAPEO VISUAL GAME ── */
+  .refuge-map {
+    background: linear-gradient(160deg, #2C5F8A 0%, #1A3A5C 100%);
+    border-radius: 12px;
+    padding: 1.2rem;
+    position: relative;
+    min-height: 340px;
+    margin-bottom: 1rem;
+    overflow: hidden;
+    border: 2px solid rgba(13,168,158,0.3);
+  }
+
+  .map-label {
+    font-family: 'Space Mono', monospace;
+    font-size: 0.65rem;
+    color: rgba(255,255,255,0.5);
+    letter-spacing: 0.1em;
+    margin-bottom: 0.8rem;
+  }
+
+  .map-zones {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: 0.7rem;
+    height: 280px;
+  }
+
+  .map-zone {
+    background: rgba(255,255,255,0.06);
+    border: 1px dashed rgba(255,255,255,0.15);
+    border-radius: 8px;
+    padding: 0.5rem;
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    gap: 0.4rem;
+  }
+
+  .zone-label {
+    font-size: 0.6rem;
+    color: rgba(255,255,255,0.4);
+    font-family: 'Space Mono', monospace;
+    letter-spacing: 0.08em;
+  }
+
+  .person-token {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.3rem;
+    background: rgba(255,255,255,0.1);
+    border: 1px solid rgba(255,255,255,0.15);
+    border-radius: 20px;
+    padding: 0.25rem 0.5rem;
+    font-size: 0.75rem;
+    cursor: pointer;
+    transition: all 0.2s;
+    user-select: none;
+    width: fit-content;
+  }
+
+  .person-token:hover { background: rgba(20,168,158,0.3); border-color: var(--teal2); }
+  .person-token.selected { background: rgba(245,166,35,0.3); border-color: var(--accent); }
+  .person-token.correct-select { background: rgba(26,122,74,0.4); border-color: #4CAF50; }
+  .person-token.wrong-select { background: rgba(192,57,43,0.3); border-color: var(--red); }
+
+  .token-emoji { font-size: 1rem; }
+  .token-name { color: rgba(255,255,255,0.85); font-size: 0.7rem; }
+
+  .map-instructions {
+    background: rgba(13,115,119,0.2);
+    border: 1px solid rgba(13,168,158,0.3);
+    border-radius: 8px;
+    padding: 0.7rem 1rem;
+    font-size: 0.82rem;
+    color: var(--teal2);
+    margin-bottom: 0.8rem;
+    line-height: 1.5;
+  }
+
+  .selected-count {
+    font-family: 'Space Mono', monospace;
+    font-size: 0.78rem;
+    color: var(--accent);
+    margin-bottom: 0.5rem;
+  }
+
+  .confirm-map-btn {
+    background: var(--teal);
+    color: white;
+    border: none;
+    font-family: 'Space Grotesk', sans-serif;
+    font-weight: 600;
+    padding: 0.6rem 1.4rem;
+    border-radius: 8px;
+    cursor: pointer;
+    font-size: 0.85rem;
+    transition: all 0.2s;
+  }
+
+  .confirm-map-btn:hover { background: var(--teal2); }
+
+  /* ── INFO GATHERING ── */
+  .info-person-card {
+    background: var(--white);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 1rem 1.2rem;
+    margin-bottom: 1rem;
+  }
+
+  .info-person-header {
+    display: flex;
+    align-items: center;
+    gap: 0.8rem;
+    margin-bottom: 0.8rem;
+  }
+
+  .info-person-avatar {
+    width: 46px;
+    height: 46px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.4rem;
+    flex-shrink: 0;
+  }
+
+  .info-person-name { font-weight: 700; color: var(--navy); font-size: 0.95rem; }
+  .info-person-desc { font-size: 0.8rem; color: var(--dgray); }
+
+  .questions-list {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+
+  .question-chip {
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+    background: var(--off);
+    border: 1.5px solid var(--border);
+    border-radius: 8px;
+    padding: 0.6rem 0.9rem;
+    font-size: 0.85rem;
+    cursor: pointer;
+    transition: all 0.18s;
+    color: var(--navy);
+  }
+
+  .question-chip:hover:not(.used) { border-color: var(--teal); background: var(--teal3); }
+  .question-chip.good { border-color: var(--green); background: var(--green2); color: var(--green); pointer-events: none; }
+  .question-chip.bad { border-color: var(--red); background: var(--red2); color: var(--red); pointer-events: none; }
+  .question-chip.used { opacity: 0.5; pointer-events: none; }
+
+  .chip-icon { font-size: 0.85rem; flex-shrink: 0; }
+
+  /* ── NETWORK BUILDER ── */
+  .network-container {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1rem;
+  }
+
+  .network-col-label {
+    font-family: 'Space Mono', monospace;
+    font-size: 0.65rem;
+    letter-spacing: 0.1em;
+    color: var(--teal);
+    font-weight: 700;
+    margin-bottom: 0.6rem;
+  }
+
+  .actor-card {
+    background: var(--white);
+    border: 2px solid var(--border);
+    border-radius: 8px;
+    padding: 0.7rem 0.9rem;
+    margin-bottom: 0.6rem;
+    cursor: pointer;
+    transition: all 0.2s;
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+  }
+
+  .actor-card:hover { border-color: var(--teal); }
+  .actor-card.selected { border-color: var(--teal); background: var(--teal3); }
+  .actor-card.matched { border-color: var(--green); background: var(--green2); pointer-events: none; }
+  .actor-card.wrong-match { border-color: var(--red); background: var(--red2); }
+
+  .actor-emoji { font-size: 1.2rem; }
+  .actor-name { font-weight: 600; font-size: 0.85rem; color: var(--navy); }
+  .actor-role { font-size: 0.72rem; color: var(--dgray); }
+
+  .task-card {
+    background: var(--navy);
+    border: 2px solid rgba(255,255,255,0.1);
+    border-radius: 8px;
+    padding: 0.7rem 0.9rem;
+    margin-bottom: 0.6rem;
+    cursor: pointer;
+    transition: all 0.2s;
+    color: white;
+  }
+
+  .task-card:hover { border-color: var(--teal2); }
+  .task-card.selected { border-color: var(--accent); background: rgba(245,166,35,0.15); }
+  .task-card.matched { border-color: var(--green); background: rgba(26,122,74,0.3); pointer-events: none; }
+  .task-card.wrong-match { border-color: var(--red); background: rgba(192,57,43,0.2); }
+
+  .task-text { font-size: 0.82rem; line-height: 1.4; }
+
+  /* ── SCRIPT BUILDER ── */
+  .script-blocks {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    margin-bottom: 1rem;
+  }
+
+  .script-block {
+    background: var(--white);
+    border: 2px solid var(--border);
+    border-radius: 8px;
+    padding: 0.8rem 1rem;
+    cursor: grab;
+    transition: all 0.2s;
+    display: flex;
+    align-items: flex-start;
+    gap: 0.7rem;
+    user-select: none;
+  }
+
+  .script-block:hover { border-color: var(--teal); }
+  .script-block.dragging { opacity: 0.5; }
+  .script-block.correct-pos { border-color: var(--green); background: var(--green2); }
+  .script-block.wrong-pos { border-color: var(--red); background: var(--red2); }
+
+  .block-handle { color: var(--gray); font-size: 0.9rem; cursor: grab; }
+  .block-text { font-size: 0.85rem; color: var(--navy); line-height: 1.5; }
+
+  .script-slots {
+    display: flex;
+    flex-direction: column;
+    gap: 0.4rem;
+    margin-bottom: 1rem;
+  }
+
+  .script-slot {
+    border: 2px dashed var(--border);
+    border-radius: 8px;
+    padding: 0.6rem 1rem;
+    min-height: 48px;
+    display: flex;
+    align-items: center;
+    transition: all 0.2s;
+    background: rgba(255,255,255,0.5);
+  }
+
+  .slot-label {
+    font-family: 'Space Mono', monospace;
+    font-size: 0.65rem;
+    color: var(--gray);
+    letter-spacing: 0.08em;
+    margin-right: 0.5rem;
+    flex-shrink: 0;
+  }
+
+  .script-slot.dragover { border-color: var(--teal2); background: var(--teal3); }
+  .script-slot.filled { border-style: solid; border-color: var(--teal); }
+  .script-slot.correct-slot { border-color: var(--green); background: var(--green2); }
+  .script-slot.wrong-slot { border-color: var(--red); background: var(--red2); }
+
+  /* ── RESULTS SCREEN ── */
+  #results {
+    background: var(--navy);
+    align-items: center;
+    justify-content: center;
+    padding: 2rem;
+  }
+
+  .results-content {
+    max-width: 680px;
+    width: 100%;
+    text-align: center;
+  }
+
+  .results-badge {
+    font-family: 'Space Mono', monospace;
+    font-size: 0.7rem;
+    letter-spacing: 0.15em;
+    color: var(--teal2);
+    margin-bottom: 1rem;
+  }
+
+  .results-score-ring {
+    width: 140px;
+    height: 140px;
+    border-radius: 50%;
+    margin: 0 auto 1.5rem;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+  }
+
+  .ring-svg { position: absolute; inset: 0; width: 100%; height: 100%; }
+
+  .score-num {
+    font-family: 'Space Mono', monospace;
+    font-size: 2.5rem;
+    font-weight: 700;
+    line-height: 1;
+  }
+
+  .score-label {
+    font-size: 0.7rem;
+    color: var(--gray);
+    font-family: 'Space Mono', monospace;
+  }
+
+  .results-title {
+    font-size: 1.8rem;
+    font-weight: 700;
+    margin-bottom: 0.5rem;
+  }
+
+  .results-subtitle {
+    color: var(--gray);
+    font-size: 0.95rem;
+    margin-bottom: 2rem;
+    line-height: 1.6;
+  }
+
+  .results-breakdown {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 0.8rem;
+    margin-bottom: 2rem;
+  }
+
+  .breakdown-item {
+    background: rgba(255,255,255,0.05);
+    border: 1px solid rgba(255,255,255,0.08);
+    border-radius: 10px;
+    padding: 1rem 0.5rem;
+    text-align: center;
+  }
+
+  .breakdown-num {
+    font-family: 'Space Mono', monospace;
+    font-size: 1.6rem;
+    font-weight: 700;
+    display: block;
+    margin-bottom: 0.2rem;
+  }
+
+  .breakdown-label {
+    font-size: 0.72rem;
+    color: var(--gray);
+    line-height: 1.3;
+  }
+
+  .verdict-box {
+    background: rgba(13,115,119,0.15);
+    border: 1px solid rgba(13,168,158,0.3);
+    border-radius: 12px;
+    padding: 1.2rem;
+    margin-bottom: 1.5rem;
+    text-align: left;
+  }
+
+  .verdict-title {
+    font-weight: 700;
+    color: var(--teal2);
+    margin-bottom: 0.4rem;
+    font-size: 0.9rem;
+  }
+
+  .verdict-text {
+    font-size: 0.88rem;
+    color: #9DB8CC;
+    line-height: 1.6;
+  }
+
+  .restart-btn {
+    background: var(--teal);
+    color: white;
+    border: none;
+    font-family: 'Space Grotesk', sans-serif;
+    font-size: 1rem;
+    font-weight: 600;
+    padding: 0.9rem 2.5rem;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+
+  .restart-btn:hover { background: var(--teal2); transform: translateY(-2px); }
+
+  /* ── UTILS ── */
+  .tag {
+    display: inline-block;
+    font-size: 0.7rem;
+    font-family: 'Space Mono', monospace;
+    padding: 0.2rem 0.5rem;
+    border-radius: 3px;
+    margin-bottom: 0.6rem;
+  }
+
+  .tag-mapeo { background: rgba(13,115,119,0.15); color: var(--teal); }
+  .tag-info { background: rgba(26,122,74,0.15); color: var(--green); }
+  .tag-redes { background: rgba(15,34,64,0.1); color: var(--navy2); }
+  .tag-psico { background: rgba(245,166,35,0.15); color: #B07500; }
+  .tag-riesgo { background: rgba(192,57,43,0.12); color: var(--red); }
+
+  .score-gain {
+    font-family: 'Space Mono', monospace;
+    font-size: 0.75rem;
+    color: var(--accent);
+    font-weight: 700;
+  }
+
+  /* ── PERSON CARDS ── */
+  .person-card:hover {
+    box-shadow: 0 6px 20px rgba(15,34,64,0.14) !important;
+    transform: translateY(-2px);
+  }
+
+  @media (max-width: 600px) {
+    .network-container { grid-template-columns: 1fr; }
+    .results-breakdown { grid-template-columns: repeat(2, 1fr); }
+    .map-zones { grid-template-columns: 1fr 1fr; height: auto; }
+    .hud { gap: 0.8rem; }
+  }
+</style>
+</head>
+<body>
+
+<!-- ══════════════════════════════════════
+     INTRO SCREEN
+══════════════════════════════════════ -->
+<div id="intro" class="screen active">
+  <div class="intro-bg"></div>
+  <div class="intro-content">
+    <div class="intro-badge">SIMULADOR DE CAMPO · UPS PSICOLOGÍA CLÍNICA</div>
+    <div class="intro-title">CAMPO<br><span>36H</span></div>
+    <div class="intro-sub">Intervención Psicosocial en Desastres</div>
+    <div class="intro-case">📍 Caso real: Terremoto Venezuela — 24 junio 2026</div>
+
+    <div class="intro-story">
+      <strong>Eres psicólogo/a de campo.</strong> Han pasado 36 horas desde el terremoto en Venezuela. Llegas al Estadio Nacional de Caracas, habilitado como refugio de emergencia para 850 personas desplazadas.<br><br>
+      Tu supervisor te señala una zona con 120 personas y dice: <em>"Tienes 4 horas. Comienza."</em><br><br>
+      Cada decisión que tomes tiene consecuencias reales para las personas del refugio. No hay respuestas perfectas — hay respuestas fundamentadas.
+    </div>
+
+    <div class="intro-phases">
+      <span class="phase-pill">01 · Mapeo Visual</span>
+      <span class="phase-pill">02 · Levantamiento</span>
+      <span class="phase-pill">03 · Redes</span>
+      <span class="phase-pill">04 · Psicoeducación</span>
+      <span class="phase-pill">05 · Detección</span>
+      <span class="phase-pill">06 · Informe</span>
+    </div>
+
+    <button class="btn-primary" onclick="startGame()">ENTRAR AL CAMPO →</button>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════
+     GAME SCREEN
+══════════════════════════════════════ -->
+<div id="game" class="screen">
+  <div class="hud">
+    <div class="hud-logo">CAMPO 36H</div>
+    <div class="hud-phase">FASE <span id="hud-phase-num">1/6</span></div>
+    <div class="hud-phase" id="hud-phase-name">Mapeo Psicosocial</div>
+    <div class="hud-timer">
+      <span class="timer-icon">⏱</span>
+      <span id="timer-display">04:00:00</span>
+    </div>
+    <div class="hud-score">★ <span id="score-display">0</span> pts</div>
+  </div>
+  <div class="progress-bar">
+    <div class="progress-fill" id="progress-fill" style="width:0%"></div>
+  </div>
+
+  <div class="phase-container" id="phase-container">
+    <!-- Dynamic content here -->
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════
+     RESULTS SCREEN
+══════════════════════════════════════ -->
+<div id="results" class="screen">
+  <div class="results-content">
+    <div class="results-badge">INFORME DE CAMPO · MISIÓN COMPLETADA</div>
+
+    <div class="results-score-ring" id="score-ring">
+      <svg class="ring-svg" viewBox="0 0 140 140">
+        <circle cx="70" cy="70" r="60" fill="none" stroke="rgba(255,255,255,0.08)" stroke-width="8"/>
+        <circle cx="70" cy="70" r="60" fill="none" stroke="#0D7377" stroke-width="8"
+                stroke-dasharray="377" stroke-dashoffset="377"
+                stroke-linecap="round" transform="rotate(-90 70 70)"
+                id="ring-progress" style="transition: stroke-dashoffset 1.5s ease"/>
+      </svg>
+      <div class="score-num" id="final-score-num">0</div>
+      <div class="score-label">puntos</div>
+    </div>
+
+    <div class="results-title" id="results-title">Intervención completada</div>
+    <div class="results-subtitle" id="results-subtitle"></div>
+
+    <div class="results-breakdown">
+      <div class="breakdown-item">
+        <span class="breakdown-num" id="res-correct" style="color:#14A89E">0</span>
+        <div class="breakdown-label">Decisiones correctas</div>
+      </div>
+      <div class="breakdown-item">
+        <span class="breakdown-num" id="res-wrong" style="color:#C0392B">0</span>
+        <div class="breakdown-label">Errores cometidos</div>
+      </div>
+      <div class="breakdown-item">
+        <span class="breakdown-num" id="res-time" style="color:#F5A623">00:00</span>
+        <div class="breakdown-label">Tiempo restante</div>
+      </div>
+    </div>
+
+    <div class="verdict-box" id="verdict-box">
+      <div class="verdict-title" id="verdict-title">Evaluación de campo</div>
+      <div class="verdict-text" id="verdict-text"></div>
+    </div>
+
+    <button class="restart-btn" onclick="restartGame()">↺ NUEVA MISIÓN</button>
+  </div>
+</div>
+
+<script>
+// ══════════════════════════════════════
+// GAME DATA
+// ══════════════════════════════════════
+
+const PHASES = [
+
+  // ── PHASE 1: MAPEO VISUAL ──────────────────────────
+  {
+    id: 'mapeo', num: '01', name: 'Mapeo Psicosocial',
+    tagClass: 'tag-mapeo', tagText: 'MAPEO PSICOSOCIAL',
+    title: 'Observa y decide quién necesita atención prioritaria',
+    desc: 'Lee la ficha de cada persona. Marca todas las que intervendrías primero. Recuerda: no puedes elegir a todos — prioriza.',
+    type: 'mapeo', timeDeduct: 25,
+    people: [
+      { id:'p1', emoji:'👴', name:'Don Héctor', zone:'Zona A — Entrada',
+        edad:'78 años', estado:'Sentado solo en el piso, apoyado contra la pared. No busca contacto visual. No ha pedido agua ni comida en 2 horas.',
+        detalle:'Su familia no ha aparecido. Una vecina dice que vive solo desde hace 3 años.',
+        tags:['Solo','Adulto mayor','Sin red familiar'],
+        vulnerable: true,
+        reason:'Adulto mayor aislado sin red familiar — alta vulnerabilidad física y social. El aislamiento en mayores de 70 es factor de riesgo independiente.' },
+      { id:'p2', emoji:'👩', name:'Señora María', zone:'Zona A — Entrada',
+        edad:'45 años', estado:'De pie, habla activamente por teléfono. Coordina con su familia dónde encontrarse. Tiene mochila con pertenencias.',
+        detalle:'Parece orientada y con recursos. Dice que su hermano viene a buscarla.',
+        tags:['Red activa','Orientada','Recursos propios'],
+        vulnerable: false,
+        reason:'Tiene red de comunicación activa y orientación temporal. No requiere intervención prioritaria en este momento.' },
+      { id:'p3', emoji:'🧒', name:'Niña (sin nombre)', zone:'Zona A — Entrada',
+        edad:'~4 años', estado:'Parada sola junto a una columna. No llora. Mira a todos pero no se mueve ni habla. Nadie la reclama.',
+        detalle:'Llegó así. Nadie del refugio la conoce o la reclama. No responde cuando le hablan.',
+        tags:['Menor sola','Sin adulto','Mutismo reactivo'],
+        vulnerable: true,
+        reason:'Menor de 6 años sin adulto de referencia — prioridad máxima. El mutismo reactivo en niños pequeños tras trauma es señal clínica grave.' },
+      { id:'p4', emoji:'🧑', name:'Joven Ramón', zone:'Zona B — Centro',
+        edad:'22 años', estado:'Sentado con 4 amigos. Ríen, comparten comida. Activo y comunicativo.',
+        detalle:'Perdió su moto pero dice "estamos vivos, eso es lo que importa". Planea salir mañana.',
+        tags:['Red de pares activa','Afrontamiento positivo'],
+        vulnerable: false,
+        reason:'Red de pares activa y afrontamiento positivo del evento. No requiere intervención prioritaria.' },
+      { id:'p5', emoji:'🤰', name:'Valeria', zone:'Zona B — Centro',
+        edad:'29 años · 7 meses de embarazo', estado:'Sentada en el piso, recostada contra la pared. Cara de agotamiento total. No ha comido. No hay nadie con ella.',
+        detalle:'Su esposo está desaparecido desde el sismo. No tiene familia en Caracas. No sabe qué hacer.',
+        tags:['Embarazo avanzado','Sola','Esposo desaparecido'],
+        vulnerable: true,
+        reason:'Embarazo de 7 meses sin acompañante, esposo desaparecido — riesgo físico y emocional elevado. Requiere atención médica y psicosocial urgente.' },
+      { id:'p6', emoji:'👨', name:'Sr. Camacho', zone:'Zona B — Centro',
+        edad:'50 años', estado:'Llora de forma continua hace más de 40 minutos. Cuando alguien intenta acercarse, se levanta y se aleja. Rechaza el contacto.',
+        detalle:'Perdió a su madre en el derrumbe. La encontraron esta mañana.',
+        tags:['Duelo agudo','Rechazo de contacto','Pérdida reciente'],
+        vulnerable: true,
+        reason:'Duelo agudo con pérdida reciente y rechazo activo de apoyo — señal de desbordamiento emocional. El rechazo de contacto es paradójicamente una señal de necesidad alta.' },
+      { id:'p7', emoji:'👦', name:'Carlos', zone:'Zona C — Descanso',
+        edad:'9 años', estado:'Corre con otros niños. Juega a las escondidas entre las colchonetas. Se ríe.',
+        detalle:'Está con su mamá y su abuela. Su mamá lo vigila desde un banco cercano.',
+        tags:['Con familia','Juego activo','Supervisado'],
+        vulnerable: false,
+        reason:'Niño con red familiar presente y conducta adaptada. El juego activo en niños post-trauma es indicador de funcionamiento normal.' },
+      { id:'p8', emoji:'👩‍🦽', name:'Doña Carmen', zone:'Zona C — Descanso',
+        edad:'62 años', estado:'En silla de ruedas ubicada en un pasillo estrecho. No puede moverse sola. El lugar estaría bloqueado en una evacuación. Nadie la acompaña.',
+        detalle:'Sus vecinos la trajeron pero se fueron. No sabe dónde están sus documentos ni sus medicamentos.',
+        tags:['Discapacidad motriz','Sola','Riesgo físico','Sin medicamentos'],
+        vulnerable: true,
+        reason:'Discapacidad sin acompañante, ubicación de riesgo físico, sin medicamentos — acción inmediata necesaria por razones físicas y sociales.' },
+      { id:'p9', emoji:'👨‍💼', name:'Pastor Leal', zone:'Zona C — Descanso',
+        edad:'55 años', estado:'De pie coordinando voluntarios, repartiendo agua. Varios vecinos lo siguen y escuchan sus instrucciones.',
+        detalle:'Es pastor de la iglesia del barrio. Conoce a la mayoría de las familias de la zona.',
+        tags:['Líder comunitario','Organiza voluntarios','Recurso clave'],
+        vulnerable: false,
+        reason:'Líder comunitario activo con influencia real — no es prioridad clínica. Es un recurso estratégico a activar en la Fase de Redes.' },
+    ]
+  },
+
+  // ── PHASE 2: INFO GATHERING ────────────────────────
+  {
+    id: 'info',
+    num: '02', name: 'Levantamiento de Información',
+    tagClass: 'tag-info', tagText: 'LEVANTAMIENTO',
+    title: 'Recolectar información clave',
+    desc: 'Tienes frente a ti a las personas prioritarias. Debes hacer las preguntas correctas para levantar información útil. Algunas preguntas generan confianza y datos — otras cuestan tiempo o dañan el vínculo.',
+    type: 'info',
+    timeDeduct: 20,
+    cases: [
+      {
+        person: { emoji:'👴', name:'Don Héctor', bg:'#1A4A7A', desc:'78 años. Llegó solo. Tiene la mirada baja y no inició conversación.' },
+        questions: [
+          { text:'¿Cómo se siente usted en este momento?', good: false, feedback:'Esta pregunta abre emociones sin tener aún lo básico cubierto. En Fase 1, primero necesidades concretas.' },
+          { text:'¿Necesita algo ahora mismo? ¿Agua, comida, un lugar para sentarse mejor?', good: true, feedback:'Correcto. Cubrir necesidades básicas primero genera confianza y da información sobre su estado funcional.' },
+          { text:'¿Tiene familiares buscándolo? ¿Alguien sabe que está aquí?', good: true, feedback:'Excelente. Mapea la red de apoyo — dato crítico para saber si está aislado.' },
+          { text:'¿Perdió muchas cosas en el sismo?', good: false, feedback:'Reactivar el evento traumáticamente sin necesidad. Deja esa pregunta para fases posteriores.' },
+          { text:'¿Tiene alguna condición médica que deba conocer?', good: true, feedback:'Muy bien. En adultos mayores solos, esto es urgente para coordinar con el equipo médico.' },
+        ]
+      },
+      {
+        person: { emoji:'👩', name:'Valeria', bg:'#4A2A6A', desc:'7 meses de embarazo. Sentada en el piso. Cara de agotamiento.' },
+        questions: [
+          { text:'¿Cuántos meses tiene de embarazo y cómo se ha sentido físicamente?', good: true, feedback:'Correcto. Establece el riesgo obstétrico concreto de inmediato.' },
+          { text:'¿Está sola o hay alguien con usted?', good: true, feedback:'Bien. Mapea red de apoyo — las embarazadas solas son prioridad de acompañamiento.' },
+          { text:'¿Cómo procesó emocionalmente el sismo?', good: false, feedback:'Demasiado pronto para procesar el evento. Primero estabilización física y social.' },
+          { text:'¿Tiene al médico que la atiende? ¿Puede contactarlo?', good: true, feedback:'Excelente. Conectar con continuidad del cuidado médico es urgente en este caso.' },
+          { text:'¿Le gustaría hablar de cómo se siente con el bebé?', good: false, feedback:'Sin rapport establecido y sin necesidades básicas cubiertas, esto puede generar incomodidad.' },
+        ]
+      }
+    ]
+  },
+
+  // ── PHASE 3: REDES ────────────────────────────────
+  {
+    id: 'redes',
+    num: '03', name: 'Redes Comunitarias',
+    tagClass: 'tag-redes', tagText: 'REDES COMUNITARIAS',
+    title: 'Conectar actores con tareas',
+    desc: 'Identificaste los recursos del refugio. Ahora debes asignar tareas a cada actor comunitario. Selecciona un actor y luego la tarea que mejor le corresponde.',
+    type: 'redes',
+    timeDeduct: 15,
+    actors: [
+      { id:'a1', emoji:'⛪', name:'Pastor Leal', role:'Líder religioso, convoca grupos de 30+ personas' },
+      { id:'a2', emoji:'🏫', name:'Prof. Andreina', role:'Maestra de primaria, conoce a las familias con niños' },
+      { id:'a3', emoji:'🏥', name:'Enf. Torres', role:'Enfermera del refugio, hace rondas cada 2 horas' },
+      { id:'a4', emoji:'👑', name:'Líder Gómez', role:'Presidenta del consejo comunal del barrio' },
+    ],
+    tasks: [
+      { id:'t1', text:'Ceder espacio en su reunión vespertina para la sesión de psicoeducación (60 personas en 20 min)', actorId:'a1' },
+      { id:'t2', text:'Identificar niños con señales de alerta en el espacio de juego y reportarlas al equipo', actorId:'a2' },
+      { id:'t3', text:'Alertar al equipo psicosocial si detecta en sus rondas a alguien con señales de disociación o riesgo', actorId:'a3' },
+      { id:'t4', text:'Facilitar el acceso a las familias del barrio y mediar conflictos internos del refugio', actorId:'a4' },
+    ]
+  },
+
+  // ── PHASE 4: PSICOEDUCACIÓN — ESCRITURA PROPIA ───────────────────────
+  {
+    id: 'psico', num: '04', name: 'Psicoeducación',
+    tagClass: 'tag-psico', tagText: 'PSICOEDUCACIÓN',
+    title: 'Redacta tu guión de sesión',
+    desc: 'Tienes 20 minutos para dar una sesión de psicoeducación a 60 personas en el refugio. Escribe con tus propias palabras lo que dirías en cada momento.',
+    type: 'psico', timeDeduct: 18,
+    referencia: [
+      { icon:'🎤', label:'APERTURA', hint:'¿Cómo te presentas? ¿Qué NO vas a hacer? ¿Qué SÍ vas a decirles? (sin tecnicismos)' },
+      { icon:'📋', label:'NORMALIZACIÓN', hint:'¿Qué síntomas mencionas? ¿Cómo explicas que son normales? (incluye ejemplos concretos del refugio)' },
+      { icon:'🧠', label:'EXPLICACIÓN', hint:'¿Cómo explicas la respuesta de estrés agudo sin usar ese término? (usa una metáfora)' },
+      { icon:'🛠️', label:'QUÉ HACER', hint:'3 cosas concretas que pueden hacer HOY. Sin palabras clínicas.' },
+      { icon:'⚠️', label:'CUÁNDO BUSCAR AYUDA', hint:'¿Cuándo y cómo pedir ayuda profesional? ¿Cómo evitas el estigma?' },
+      { icon:'🤝', label:'CIERRE', hint:'¿Cómo terminas? ¿Qué quieres que se lleven?' },
+    ]
+  },
+
+  // ── PHASE 5: DETECCIÓN ───────────────────────────
+  {
+    id: 'riesgo', num: '05', name: 'Detección de Riesgo',
+    tagClass: 'tag-riesgo', tagText: 'DETECCIÓN CLÍNICA',
+    title: 'Evalúa los casos críticos',
+    desc: 'Tres personas requieren tu criterio clínico. Lee con atención cada situación — los síntomas se parecen pero no son lo mismo.',
+    type: 'mcq', timeDeduct: 0,
+    questions: [
+      {
+        scene: { emoji:'👩', bg:'#2C1A1A',
+          situation:'<strong>Sra. Lucía, 38 años.</strong> Perdió a su hijo de 6 años en el derrumbe. Han pasado 10 días. Cuando le hablas dice: "Mi hijo viene esta tarde, le tengo su merienda lista." Lo repite cada vez que alguien se acerca. No come. No duerme. Su tono es completamente tranquilo — no llora.' },
+        question:'¿Qué está ocurriendo con la Sra. Lucía y cuál es tu primer paso?',
+        options:[
+          { text:'Duelo intenso con negación adaptativa. Le acompaño en silencio, valido lo que siente y le doy espacio para procesar a su ritmo.', correct: false },
+          { text:'Posible disociación. Me siento cerca, la oriento con calma al presente ("está usted aquí, hoy es..."), y la derivo al equipo médico de urgencia.', correct: true },
+          { text:'Psicosis reactiva al trauma. Interrumpo la creencia explicándole directamente que su hijo falleció para evitar que profundice en la desconexión.', correct: false },
+          { text:'Estrés agudo con disociación leve. La dejo en observación y la registro para seguimiento en 48 horas.', correct: false },
+        ],
+        feedbackCorrect: 'Correcto. La calma absoluta + hablar del fallecido en presente a los 10 días + alteración de sueño y alimentación = disociación, no duelo. NO confrontas la creencia — orientas suavemente. La derivación es urgente.',
+        feedbackWrong: 'Incorrecto. La clave no es el dolor — es la ausencia de dolor. La calma absoluta frente a la pérdida de un hijo, hablar de él como vivo, sin comer ni dormir: son señales de disociación, que requiere derivación médica urgente y orientación suave al presente, nunca confrontación directa ni espera.'
+      },
+      {
+        scene: { emoji:'👦', bg:'#1A2C1A',
+          situation:'<strong>Pedro, 16 años.</strong> Sentado solo en un rincón. Al acercarte dice con voz tranquila: "¿Para qué seguir? Hubiera sido mejor que me aplastara también." No llora. Cuando le preguntas por su familia dice que está bien.' },
+        question:'¿Cuál es tu respuesta de intervención inmediata?',
+        options:[
+          { text:'Le normalizo la reacción: "Es normal sentirse así después de lo que viviste. Todos estamos pasándola mal." Le ofrezco compañía.', correct: false },
+          { text:'Busco a algún familiar presente en el refugio para que lo acompañe mientras yo atiendo otros casos urgentes.', correct: false },
+          { text:'Le pregunto directamente: "¿Estás pensando en hacerte daño?" y evalúo si tiene un plan. No lo dejo solo.', correct: true },
+          { text:'Lo registro como caso de duelo y lo derivo al equipo para evaluación en las próximas 24 horas.', correct: false },
+        ],
+        feedbackCorrect: 'Correcto. Preguntar directamente NO aumenta el riesgo — lo reduce. La pregunta le dice que alguien lo ve. Luego: ¿tiene plan? → protocolo de emergencia. ¿Solo ideación? → no lo dejas solo, seguimiento inmediato. "24 horas" o "normalizar" son respuestas que pueden costar una vida.',
+        feedbackWrong: 'Incorrecto. "Hubiera sido mejor que me aplastara" es ideación suicida activa — no duelo normal, no espera. La respuesta correcta es preguntar directamente sobre riesgo suicida. Normalizar o derivar a 24h ignora una señal de alarma real e inmediata.'
+      },
+      {
+        scene: { emoji:'👩', bg:'#1A1A2C',
+          situation:'<strong>Rosa, 42 años, 3 semanas post-sismo.</strong> Llora a diario, tiene pesadillas frecuentes y revive el momento del derrumbe. Extraña mucho a su esposo fallecido. Sin embargo: cuida a sus dos hijos, come con dificultad pero come, habla contigo y responde preguntas.' },
+        question:'¿Cómo interpretas el cuadro de Rosa y qué haces?',
+        options:[
+          { text:'Duelo complicado incipiente. Inicio intervención terapéutica individual — las pesadillas y el llanto diario a 3 semanas indican cronicidad.', correct: false },
+          { text:'Estrés postraumático subclínico. La derivo para evaluación diagnóstica formal con el equipo de salud mental.', correct: false },
+          { text:'Reacción de duelo normal. La acompaño con psicoeducación, grupos de apoyo mutuo y seguimiento a las 6 semanas.', correct: true },
+          { text:'Depresión mayor con síntomas ansiosos. Necesita evaluación psiquiátrica para considerar medicación.', correct: false },
+        ],
+        feedbackCorrect: 'Correcto. La clave está en el funcionamiento: llora, tiene pesadillas, revive el evento — todo normal a 3 semanas de un desastre. Pero cuida a sus hijos, come, se comunica. Eso es duelo en proceso. Patologizar esto sería un error ético: medicalizar lo normal genera dependencia y estigma.',
+        feedbackWrong: 'Incorrecto. Las pesadillas, el llanto y la tristeza son normales a 3 semanas. El criterio decisivo es el funcionamiento: cuida hijos, come, habla. Diagnosticar duelo complicado, TEPT o depresión mayor requiere criterios de tiempo y disfunción que Rosa no cumple. Patologizar el duelo normal es uno de los errores más frecuentes en intervención post-desastre.'
+      }
+    ]
+  }
+];
+
+// ══════════════════════════════════════
+// GAME STATE
+// ══════════════════════════════════════
+let state = {
+  phase: 0,
+  score: 0,
+  correct: 0,
+  wrong: 0,
+  timerSeconds: 4 * 60 * 60, // 4 hours simulated
+  timerInterval: null,
+  phaseData: {},
+  // mapeo
+  selectedPeople: new Set(),
+  // info
+  infoCase: 0,
+  goodQuestionsAsked: 0,
+  // redes
+  selectedActor: null,
+  matchedPairs: {},
+  // psico
+  scriptOrder: [],
+  draggedBlock: null,
+  slotContent: {},
+  // mcq
+  mcqCurrent: 0,
+  mcqAnswered: false,
+};
+
+// ══════════════════════════════════════
+// TIMER
+// ══════════════════════════════════════
+function startTimer() {
+  state.timerInterval = setInterval(() => {
+    state.timerSeconds = Math.max(0, state.timerSeconds - 1);
+    updateTimerDisplay();
+  }, 1000);
+}
+
+function updateTimerDisplay() {
+  const h = Math.floor(state.timerSeconds / 3600);
+  const m = Math.floor((state.timerSeconds % 3600) / 60);
+  const s = state.timerSeconds % 60;
+  document.getElementById('timer-display').textContent =
+    `${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`;
+}
+
+function deductTime(minutes) {
+  state.timerSeconds = Math.max(0, state.timerSeconds - minutes * 60);
+  updateTimerDisplay();
+}
+
+function getTimerFormatted() {
+  const m = Math.floor(state.timerSeconds / 60);
+  const s = state.timerSeconds % 60;
+  return `${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`;
+}
+
+// ══════════════════════════════════════
+// NAVIGATION
+// ══════════════════════════════════════
+function showScreen(id) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+}
+
+function startGame() {
+  state = {
+    phase: 0, score: 0, correct: 0, wrong: 0,
+    timerSeconds: 4 * 60 * 60,
+    timerInterval: null, phaseData: {},
+    selectedPeople: new Set(), infoCase: 0, goodQuestionsAsked: 0,
+    selectedActor: null, matchedPairs: {}, scriptOrder: [],
+    draggedBlock: null, slotContent: {}, mcqCurrent: 0, mcqAnswered: false
+  };
+  showScreen('game');
+  startTimer();
+  renderPhase();
+}
+
+function restartGame() {
+  clearInterval(state.timerInterval);
+  showScreen('intro');
+}
+
+function nextPhase() {
+  state.phase++;
+  state.mcqCurrent = 0;
+  state.mcqAnswered = false;
+  state.infoCase = 0;
+  state.goodQuestionsAsked = 0;
+  state.selectedActor = null;
+  state.matchedPairs = {};
+  state.slotContent = {};
+
+  if (state.phase >= PHASES.length) {
+    endGame();
+    return;
+  }
+  renderPhase();
+}
+
+function updateHUD() {
+  const p = PHASES[state.phase];
+  document.getElementById('hud-phase-num').textContent = `${state.phase + 1}/${PHASES.length}`;
+  document.getElementById('hud-phase-name').textContent = p.name;
+  document.getElementById('score-display').textContent = state.score;
+  const pct = ((state.phase) / PHASES.length) * 100;
+  document.getElementById('progress-fill').style.width = pct + '%';
+}
+
+// ══════════════════════════════════════
+// RENDER PHASE
+// ══════════════════════════════════════
+function renderPhase() {
+  const p = PHASES[state.phase];
+  updateHUD();
+  const c = document.getElementById('phase-container');
+
+  if (p.type === 'mapeo') renderMapeo(p, c);
+  else if (p.type === 'info') renderInfo(p, c);
+  else if (p.type === 'redes') renderRedes(p, c);
+  else if (p.type === 'psico') renderPsico(p, c);
+  else if (p.type === 'mcq') renderMCQ(p, c);
+}
+
+// ══════════════════════════════════════
+// PHASE 1: MAPEO VISUAL — CARD GRID
+// ══════════════════════════════════════
+function renderMapeo(p, c) {
+  const tagColors = {
+    'Solo':'#C0392B','Sin red familiar':'#C0392B','Adulto mayor':'#8A3A00',
+    'Mutismo reactivo':'#C0392B','Menor sola':'#C0392B','Sin adulto':'#C0392B',
+    'Embarazo avanzado':'#7A3A00','Esposo desaparecido':'#C0392B','Sola':'#8A3A00',
+    'Duelo agudo':'#8A3A00','Rechazo de contacto':'#C0392B','Pérdida reciente':'#8A3A00',
+    'Discapacidad motriz':'#2A5A8A','Sin medicamentos':'#C0392B','Riesgo físico':'#C0392B',
+    'Red activa':'#1A7A4A','Orientada':'#1A7A4A','Recursos propios':'#1A7A4A',
+    'Red de pares activa':'#1A7A4A','Afrontamiento positivo':'#1A7A4A',
+    'Con familia':'#1A7A4A','Juego activo':'#1A7A4A','Supervisado':'#1A7A4A',
+    'Líder comunitario':'#0D7377','Organiza voluntarios':'#0D7377','Recurso clave':'#0D7377',
+    'default':'#5A6A7A'
+  };
+
+  c.innerHTML = `
+    <div class="phase-header">
+      <div class="phase-number">FASE ${p.num} · ${p.name}</div>
+      <div class="phase-title">${p.title}</div>
+      <div class="phase-desc">${p.desc}</div>
+    </div>
+
+    <div style="background:#E8F0F5;border:1px solid #C0D0DC;border-radius:10px;padding:0.8rem 1rem;margin-bottom:1.2rem;font-size:0.85rem;color:#2A4A6A;line-height:1.5;">
+      📍 <strong>Contexto:</strong> Estadio Nacional de Caracas · 36h post-sismo · Tu zona: ~120 personas desplazadas.
+      Tienes recursos limitados. No puedes atender a todos. Marca solo a quienes requieren intervención psicosocial prioritaria.
+    </div>
+
+    <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(270px,1fr));gap:1rem;margin-bottom:1.2rem;" id="people-grid">
+      ${p.people.map(person => `
+        <div class="person-card" id="card-${person.id}" onclick="togglePersonCard('${person.id}')" style="
+          background:#fff;border:2px solid #D4DDE8;border-radius:12px;
+          cursor:pointer;transition:all 0.2s;overflow:hidden;
+          box-shadow:0 2px 6px rgba(15,34,64,0.06);">
+          <div style="background:linear-gradient(135deg,#1A3A5C,#0D7377);padding:0.9rem 1rem;display:flex;align-items:center;gap:0.7rem;">
+            <span style="font-size:2.2rem;line-height:1;">${person.emoji}</span>
+            <div>
+              <div style="font-weight:700;color:#fff;font-size:0.95rem;">${person.name}</div>
+              <div style="font-size:0.72rem;color:rgba(255,255,255,0.6);font-family:monospace;">${person.zone}</div>
+            </div>
+            <div style="margin-left:auto;width:24px;height:24px;border-radius:50%;border:2px solid rgba(255,255,255,0.4);
+                 display:flex;align-items:center;justify-content:center;font-size:0.8rem;color:#fff;
+                 background:rgba(255,255,255,0.1);flex-shrink:0;" id="check-${person.id}">○</div>
+          </div>
+          <div style="padding:0.8rem 1rem;">
+            <div style="font-size:0.72rem;font-family:monospace;color:#8A9BB0;margin-bottom:0.3rem;letter-spacing:0.06em;">EDAD</div>
+            <div style="font-size:0.82rem;font-weight:600;color:#1A3A5C;margin-bottom:0.6rem;">${person.edad}</div>
+            <div style="font-size:0.72rem;font-family:monospace;color:#8A9BB0;margin-bottom:0.3rem;letter-spacing:0.06em;">LO QUE OBSERVAS</div>
+            <div style="font-size:0.82rem;color:#3D5166;line-height:1.5;margin-bottom:0.6rem;">${person.estado}</div>
+            <div style="font-size:0.72rem;font-family:monospace;color:#8A9BB0;margin-bottom:0.3rem;letter-spacing:0.06em;">INFORMACIÓN ADICIONAL</div>
+            <div style="font-size:0.8rem;color:#5A6A7A;line-height:1.4;margin-bottom:0.7rem;font-style:italic;">${person.detalle}</div>
+            <div style="display:flex;flex-wrap:wrap;gap:0.3rem;">
+              ${person.tags.map(tag => `<span style="font-size:0.68rem;padding:0.2rem 0.5rem;border-radius:10px;font-weight:600;
+                background:${(tagColors[tag]||tagColors['default'])}18;
+                color:${tagColors[tag]||tagColors['default']};
+                border:1px solid ${(tagColors[tag]||tagColors['default'])}40;">${tag}</span>`).join('')}
+            </div>
+          </div>
+        </div>
+      `).join('')}
+    </div>
+
+    <div style="display:flex;align-items:center;gap:1rem;flex-wrap:wrap;">
+      <div class="selected-count" id="selected-count" style="font-family:monospace;font-size:0.82rem;color:#F5A623;font-weight:700;">
+        Seleccionados: 0 personas
+      </div>
+      <button class="confirm-map-btn" id="confirm-map-btn" onclick="confirmMapeo()">✓ Confirmar mapeo</button>
+    </div>
+    <div id="mapeo-feedback" style="margin-top:1rem;"></div>
+  `;
+}
+
+function togglePersonCard(id) {
+  const card = document.getElementById(\`card-\${id}\`);
+  const check = document.getElementById(\`check-\${id}\`);
+  if (state.selectedPeople.has(id)) {
+    state.selectedPeople.delete(id);
+    card.style.borderColor = '#D4DDE8';
+    card.style.background = '#fff';
+    check.textContent = '○';
+    check.style.background = 'rgba(255,255,255,0.1)';
+    check.style.borderColor = 'rgba(255,255,255,0.4)';
+  } else {
+    state.selectedPeople.add(id);
+    card.style.borderColor = '#F5A623';
+    card.style.background = '#FFFBF0';
+    check.textContent = '✓';
+    check.style.background = '#F5A623';
+    check.style.borderColor = '#F5A623';
+  }
+  document.getElementById('selected-count').textContent = \`Seleccionados: \${state.selectedPeople.size} personas\`;
+}
+
+// togglePerson replaced by togglePersonCard in renderMapeo
+function togglePerson(id) { togglePersonCard(id); }
+
+function confirmMapeo() {
+  const p = PHASES[state.phase];
+  if (state.selectedPeople.size === 0) {
+    alert('Selecciona al menos una persona antes de confirmar.');
+    return;
+  }
+
+  let pointsEarned = 0;
+  const correctCount = p.people.filter(per => per.vulnerable).length;
+  const userCorrect = p.people.filter(per => per.vulnerable && state.selectedPeople.has(per.id)).length;
+  const falsePos = p.people.filter(per => !per.vulnerable && state.selectedPeople.has(per.id)).length;
+
+  // Visual feedback on cards
+  p.people.forEach(person => {
+    const card = document.getElementById('card-' + person.id);
+    if (!card) return;
+    const selected = state.selectedPeople.has(person.id);
+    if (person.vulnerable && selected) {
+      card.style.borderColor = '#1A7A4A';
+      card.style.background = '#E6F7EE';
+      pointsEarned += 15; state.correct++;
+    } else if (person.vulnerable && !selected) {
+      card.style.borderColor = '#C0392B';
+      card.style.background = '#FDECEA';
+      state.wrong++;
+    } else if (!person.vulnerable && selected) {
+      card.style.borderColor = '#C0392B';
+      card.style.background = '#FDECEA';
+      state.wrong++;
+    } else {
+      card.style.borderColor = '#1A7A4A';
+    }
+  });
+
+  state.score += pointsEarned;
+  document.getElementById('score-display').textContent = state.score;
+  deductTime(p.timeDeduct);
+
+  let feedbackHtml = '<div style="background:#F0F7F9;border:1px solid #D4DDE8;border-radius:12px;padding:1.2rem;margin-bottom:1rem;">'
+    + '<div style="font-weight:700;color:#0F2240;margin-bottom:0.6rem;font-size:1rem;">📊 Resultado del mapeo</div>'
+    + '<div style="font-size:0.87rem;color:#3D5166;margin-bottom:0.8rem;">'
+    + 'Identificaste <strong>' + userCorrect + ' de ' + correctCount + '</strong> personas vulnerables correctamente. '
+    + (falsePos > 0 ? 'Marcaste ' + falsePos + ' persona(s) que no eran prioridad clínica.' : 'Sin falsos positivos. ¡Buen criterio!')
+    + '</div><div style="display:flex;flex-direction:column;gap:0.5rem;">';
+
+  p.people.forEach(person => {
+    const selected = state.selectedPeople.has(person.id);
+    const correct = (person.vulnerable && selected) || (!person.vulnerable && !selected);
+    feedbackHtml += '<div style="display:flex;gap:0.5rem;align-items:flex-start;padding:0.5rem;border-radius:8px;background:'
+      + (correct ? 'rgba(26,122,74,0.06)' : 'rgba(192,57,43,0.06)') + ';">'
+      + '<span style="flex-shrink:0;">' + (correct ? '✅' : (person.vulnerable && !selected ? '❌' : '⚠️')) + '</span>'
+      + '<div><strong>' + person.emoji + ' ' + person.name + ':</strong> '
+      + '<span style="font-size:0.82rem;color:#3D5166;">' + person.reason + '</span></div></div>';
+  });
+
+  feedbackHtml += '</div></div>';
+
+  const fb = document.getElementById('mapeo-feedback');
+  fb.innerHTML = feedbackHtml
+    + '<button class="confirm-map-btn" onclick="nextPhase()" style="margin-top:0.5rem;">→ Siguiente: Levantamiento de información</button>';
+
+  document.getElementById('confirm-map-btn').style.display = 'none';
+}
+
+// ══════════════════════════════════════
+// PHASE 2: INFO GATHERING
+// ══════════════════════════════════════
+function renderInfo(p, c) {
+  renderInfoCase(p, c);
+}
+
+function renderInfoCase(p, c) {
+  const cas = p.cases[state.infoCase];
+  c.innerHTML = `
+    <div class="phase-header">
+      <div class="phase-number">FASE ${p.num} · ${p.name}</div>
+      <div class="phase-title">${p.title}</div>
+      <div class="phase-desc">${p.desc}</div>
+    </div>
+
+    <div class="scene-card">
+      <div class="scene-img" style="background: linear-gradient(160deg,${cas.person.bg},#0F2240);">
+        <div style="font-size:5rem;">${cas.person.emoji}</div>
+      </div>
+      <div class="scene-body">
+        <div class="info-person-card">
+          <div class="info-person-header">
+            <div class="info-person-avatar" style="background:${cas.person.bg}20;border:2px solid ${cas.person.bg}40;">
+              ${cas.person.emoji}
+            </div>
+            <div>
+              <div class="info-person-name">${cas.person.name}</div>
+              <div class="info-person-desc">${cas.person.desc}</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="scene-question">¿Qué le preguntas primero? Selecciona las preguntas útiles (puedes elegir varias):</div>
+
+        <div class="questions-list" id="questions-list">
+          ${cas.questions.map((q, i) => `
+            <div class="question-chip" id="qchip-${i}" onclick="askQuestion(${i})">
+              <span class="chip-icon">💬</span>
+              ${q.text}
+            </div>
+          `).join('')}
+        </div>
+
+        <div id="info-feedback" style="margin-top:0.8rem;"></div>
+        <div id="info-next" style="margin-top:0.8rem;"></div>
+      </div>
+    </div>
+  `;
+
+  state.goodQuestionsAsked = 0;
+  const requiredGood = cas.questions.filter(q => q.good).length;
+  window._infoRequiredGood = requiredGood;
+  window._infoCas = cas;
+}
+
+function askQuestion(idx) {
+  const cas = window._infoCas;
+  const q = cas.questions[idx];
+  const chip = document.getElementById(`qchip-${idx}`);
+  if (chip.classList.contains('good') || chip.classList.contains('bad')) return;
+
+  chip.classList.add(q.good ? 'good' : 'bad');
+  chip.querySelector('.chip-icon').textContent = q.good ? '✅' : '❌';
+
+  const fb = document.getElementById('info-feedback');
+  const prev = fb.innerHTML;
+  const color = q.good ? 'var(--green)' : 'var(--red)';
+  fb.innerHTML = `<div style="background:${q.good ? 'var(--green2)' : 'var(--red2)'};border:1px solid ${color}30;border-radius:8px;padding:0.8rem;font-size:0.85rem;color:${color};line-height:1.5;margin-bottom:0.5rem;">
+    <strong>${q.good ? '✓ Buena pregunta:' : '✗ Pregunta a evitar:'}</strong> ${q.feedback}
+  </div>`;
+
+  if (q.good) { state.score += 10; state.correct++; state.goodQuestionsAsked++; }
+  else { state.wrong++; deductTime(5); }
+  document.getElementById('score-display').textContent = state.score;
+
+  // Check if all good questions answered
+  const allGood = cas.questions.every((qu, i) => {
+    if (!qu.good) return true;
+    return document.getElementById(`qchip-${i}`).classList.contains('good');
+  });
+
+  if (allGood) {
+    const nextDiv = document.getElementById('info-next');
+    const p = PHASES[state.phase];
+    if (state.infoCase < p.cases.length - 1) {
+      nextDiv.innerHTML = `<button class="confirm-map-btn" onclick="nextInfoCase()">→ Siguiente caso</button>`;
+    } else {
+      deductTime(p.timeDeduct);
+      nextDiv.innerHTML = `<button class="confirm-map-btn" onclick="nextPhase()">→ Siguiente fase: Redes Comunitarias</button>`;
+    }
+  }
+}
+
+function nextInfoCase() {
+  state.infoCase++;
+  renderInfo(PHASES[state.phase], document.getElementById('phase-container'));
+}
+
+// ══════════════════════════════════════
+// PHASE 3: REDES
+// ══════════════════════════════════════
+function renderRedes(p, c) {
+  c.innerHTML = `
+    <div class="phase-header">
+      <div class="phase-number">FASE ${p.num} · ${p.name}</div>
+      <div class="phase-title">${p.title}</div>
+      <div class="phase-desc">${p.desc}</div>
+    </div>
+
+    <div class="scene-card">
+      <div class="scene-img" style="background:linear-gradient(160deg,#1A2A1A,#0F2240);flex-direction:column;gap:0.3rem;">
+        <div style="font-size:2rem;">🕸️</div>
+        <div style="font-size:0.75rem;color:rgba(255,255,255,0.5);font-family:monospace;">MAPA DE ACTORES — REFUGIO</div>
+      </div>
+      <div class="scene-body">
+        <div class="network-container">
+          <div>
+            <div class="network-col-label">ACTORES DISPONIBLES</div>
+            ${p.actors.map(a => `
+              <div class="actor-card" id="actor-${a.id}" onclick="selectActor('${a.id}')">
+                <span class="actor-emoji">${a.emoji}</span>
+                <div>
+                  <div class="actor-name">${a.name}</div>
+                  <div class="actor-role">${a.role}</div>
+                </div>
+              </div>
+            `).join('')}
+          </div>
+          <div>
+            <div class="network-col-label">TAREAS A ASIGNAR</div>
+            ${p.tasks.map(t => `
+              <div class="task-card" id="task-${t.id}" onclick="selectTask('${t.id}')">
+                <div class="task-text">${t.text}</div>
+              </div>
+            `).join('')}
+          </div>
+        </div>
+
+        <div id="redes-feedback" style="margin-top:1rem;"></div>
+        <div id="redes-progress" style="margin-top:0.5rem;font-family:monospace;font-size:0.75rem;color:var(--teal);">
+          Pares conectados: 0/${p.tasks.length}
+        </div>
+      </div>
+    </div>
+  `;
+}
+
+function selectActor(id) {
+  if (state.matchedPairs[id]) return;
+  state.selectedActor = id;
+  document.querySelectorAll('.actor-card').forEach(c => c.classList.remove('selected'));
+  document.getElementById(`actor-${id}`).classList.add('selected');
+}
+
+function selectTask(taskId) {
+  if (!state.selectedActor) {
+    const fb = document.getElementById('redes-feedback');
+    fb.innerHTML = `<div style="background:#FFF3D6;border:1px solid #F5A62340;border-radius:8px;padding:0.7rem;font-size:0.82rem;color:#8A5200;">⚠️ Primero selecciona un actor de la columna izquierda.</div>`;
+    return;
+  }
+
+  const p = PHASES[state.phase];
+  const task = p.tasks.find(t => t.id === taskId);
+  const actorCard = document.getElementById(`actor-${state.selectedActor}`);
+  const taskCard = document.getElementById(`task-${taskId}`);
+
+  if (task.actorId === state.selectedActor) {
+    // Correct
+    actorCard.classList.remove('selected');
+    actorCard.classList.add('matched');
+    taskCard.classList.add('matched');
+    state.matchedPairs[state.selectedActor] = taskId;
+    state.score += 20; state.correct++;
+    document.getElementById('score-display').textContent = state.score;
+
+    const actor = p.actors.find(a => a.id === state.selectedActor);
+    document.getElementById('redes-feedback').innerHTML = `
+      <div class="feedback-box correct" style="display:block;">
+        <div class="feedback-title">✓ Conexión correcta</div>
+        ${actor.name} es el actor ideal para esta tarea porque ${actor.role.toLowerCase()}.
+      </div>`;
+  } else {
+    // Wrong
+    actorCard.classList.add('wrong-match');
+    taskCard.classList.add('wrong-match');
+    setTimeout(() => {
+      actorCard.classList.remove('wrong-match','selected');
+      taskCard.classList.remove('wrong-match');
+    }, 1000);
+    state.wrong++;
+    document.getElementById('redes-feedback').innerHTML = `
+      <div class="feedback-box wrong" style="display:block;">
+        <div class="feedback-title">✗ Conexión incorrecta</div>
+        Ese actor no es el más adecuado para esa tarea. Piensa en el rol y la influencia que tiene cada uno.
+      </div>`;
+  }
+
+  state.selectedActor = null;
+  const matched = Object.keys(state.matchedPairs).length;
+  document.getElementById('redes-progress').textContent = `Pares conectados: ${matched}/${p.tasks.length}`;
+
+  if (matched === p.tasks.length) {
+    deductTime(p.timeDeduct);
+    setTimeout(() => {
+      document.getElementById('redes-feedback').innerHTML += `
+        <div style="margin-top:0.8rem;">
+          <div style="background:var(--green2);border:1px solid rgba(26,122,74,0.2);border-radius:8px;padding:0.8rem;font-size:0.85rem;color:var(--green);margin-bottom:0.5rem;">
+            ✅ Red activada correctamente. Tienes ${p.tasks.length} aliados en campo.
+          </div>
+          <button class="confirm-map-btn" onclick="nextPhase()">→ Siguiente fase: Psicoeducación</button>
+        </div>`;
+    }, 500);
+  }
+}
+
+// ══════════════════════════════════════
+// PHASE 4: PSICOEDUCACIÓN — ESCRITURA LIBRE
+// ══════════════════════════════════════
+function renderPsico(p, c) {
+  c.innerHTML = `
+    <div class="phase-header">
+      <div class="phase-number">FASE ${p.num} · ${p.name}</div>
+      <div class="phase-title">${p.title}</div>
+      <div class="phase-desc">${p.desc}</div>
+    </div>
+
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem;margin-bottom:1rem;">
+
+      <div style="background:#fff;border:1px solid #D4DDE8;border-radius:12px;overflow:hidden;box-shadow:0 2px 6px rgba(15,34,64,0.06);">
+        <div style="background:#0F2240;padding:0.8rem 1rem;">
+          <div style="font-family:monospace;font-size:0.65rem;color:#8AB0CC;letter-spacing:0.1em;margin-bottom:0.2rem;">DATOS DE REFERENCIA</div>
+          <div style="font-size:0.9rem;font-weight:700;color:#fff;">Lo que debes incluir</div>
+        </div>
+        <div style="padding:0.9rem 1rem;">
+          ${p.referencia.map(r => `
+            <div style="margin-bottom:0.8rem;padding-bottom:0.8rem;border-bottom:1px solid #EEF2F5;">
+              <div style="display:flex;align-items:center;gap:0.4rem;margin-bottom:0.25rem;">
+                <span style="font-size:1rem;">${r.icon}</span>
+                <span style="font-family:monospace;font-size:0.68rem;font-weight:700;color:#0D7377;letter-spacing:0.08em;">${r.label}</span>
+              </div>
+              <div style="font-size:0.78rem;color:#5A6A7A;line-height:1.5;">${r.hint}</div>
+            </div>
+          `).join('')}
+          <div style="background:#FFF8E8;border:1px solid #F5A62340;border-radius:8px;padding:0.7rem;font-size:0.78rem;color:#8A5200;line-height:1.5;">
+            ⚠️ <strong>Recuerda:</strong> Habla sin tecnicismos. No uses términos como "estrés agudo" o "TEPT". El grupo es población general en emergencia.
+          </div>
+        </div>
+      </div>
+
+      <div style="background:#fff;border:1px solid #D4DDE8;border-radius:12px;overflow:hidden;box-shadow:0 2px 6px rgba(15,34,64,0.06);">
+        <div style="background:linear-gradient(135deg,#0D7377,#14A89E);padding:0.8rem 1rem;display:flex;justify-content:space-between;align-items:center;">
+          <div>
+            <div style="font-family:monospace;font-size:0.65rem;color:rgba(255,255,255,0.6);letter-spacing:0.1em;margin-bottom:0.2rem;">TU GUIÓN</div>
+            <div style="font-size:0.9rem;font-weight:700;color:#fff;">Escribe lo que dirías</div>
+          </div>
+          <div style="font-family:monospace;font-size:0.7rem;color:rgba(255,255,255,0.7);">60 personas · 20 min</div>
+        </div>
+        <div style="padding:0.9rem 1rem;">
+          ${p.referencia.map((r,i) => `
+            <div style="margin-bottom:0.9rem;">
+              <label style="display:flex;align-items:center;gap:0.35rem;font-family:monospace;font-size:0.68rem;font-weight:700;color:#0D7377;letter-spacing:0.08em;margin-bottom:0.3rem;">
+                <span>${r.icon}</span> ${r.label}
+              </label>
+              <textarea id="psico-field-${i}"
+                placeholder="${r.hint}"
+                style="width:100%;border:1.5px solid #D4DDE8;border-radius:8px;padding:0.6rem 0.8rem;
+                       font-family:'Space Grotesk',sans-serif;font-size:0.82rem;color:#1A3A5C;
+                       resize:vertical;min-height:68px;line-height:1.5;outline:none;
+                       transition:border-color 0.2s;"
+                oninput="checkPsicoProgress()"
+                onfocus="this.style.borderColor='#0D7377'"
+                onblur="this.style.borderColor='#D4DDE8'"></textarea>
+            </div>
+          `).join('')}
+          <div id="psico-progress" style="font-family:monospace;font-size:0.72rem;color:#8A9BB0;margin-bottom:0.6rem;">
+            Secciones completadas: 0/${p.referencia.length}
+          </div>
+          <button class="confirm-map-btn" id="submit-psico-btn" onclick="submitPsico()" style="opacity:0.4;pointer-events:none;">
+            ✓ Entregar guión
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <div id="psico-feedback" style="margin-top:0.5rem;"></div>
+  `;
+}
+
+function checkPsicoProgress() {
+  const p = PHASES[state.phase];
+  let filled = 0;
+  p.referencia.forEach((_, i) => {
+    const val = document.getElementById(\`psico-field-\${i}\`);
+    if (val && val.value.trim().length > 15) filled++;
+  });
+  const prog = document.getElementById('psico-progress');
+  if (prog) prog.textContent = \`Secciones completadas: \${filled}/\${p.referencia.length}\`;
+  const btn = document.getElementById('submit-psico-btn');
+  if (btn) {
+    if (filled >= 4) {
+      btn.style.opacity = '1';
+      btn.style.pointerEvents = 'auto';
+    } else {
+      btn.style.opacity = '0.4';
+      btn.style.pointerEvents = 'none';
+    }
+  }
+}
+
+function submitPsico() {
+  const p = PHASES[state.phase];
+  let totalWords = 0;
+  let filledSections = 0;
+  const sectionNames = p.referencia.map(r => r.label);
+  let sectionResults = [];
+
+  p.referencia.forEach((r, i) => {
+    const val = document.getElementById(\`psico-field-\${i}\`);
+    const text = val ? val.value.trim() : '';
+    const words = text.split(/\s+/).filter(w => w.length > 0).length;
+    totalWords += words;
+    const ok = words >= 5;
+    if (ok) filledSections++;
+    sectionResults.push({ label: r.label, words, ok });
+  });
+
+  const pts = filledSections * 15;
+  state.score += pts;
+  if (filledSections >= 5) state.correct++; else if (filledSections >= 3) {} else state.wrong++;
+  document.getElementById('score-display').textContent = state.score;
+  deductTime(p.timeDeduct);
+
+  const good = filledSections >= 5;
+  document.getElementById('psico-feedback').innerHTML = \`
+    <div style="background:\${good?'#E6F7EE':'#FFF8E8'};border:1px solid \${good?'rgba(26,122,74,0.2)':'rgba(245,166,35,0.3)'};
+         border-radius:10px;padding:1rem 1.2rem;margin-bottom:0.8rem;">
+      <div style="font-weight:700;color:\${good?'#1A7A4A':'#8A5200'};margin-bottom:0.5rem;font-size:0.9rem;">
+        \${good ? '✅ Guión sólido' : '⚠️ Guión incompleto'} — \${filledSections}/\${p.referencia.length} secciones desarrolladas
+      </div>
+      <div style="font-size:0.82rem;color:#3D5166;line-height:1.6;margin-bottom:0.6rem;">
+        Tu guión tiene aprox. <strong>\${totalWords} palabras</strong>. 
+        \${totalWords < 80 ? 'Una sesión de 20 minutos requiere más desarrollo — el grupo necesita ejemplos y espacio para responder.' :
+          totalWords < 150 ? 'Tiene la estructura básica. En campo, recuerda dar ejemplos del refugio para que conecten.' :
+          'Bien desarrollado. Asegúrate de que el lenguaje sea accesible para adultos no especializados.'}
+      </div>
+      <div style="display:flex;flex-wrap:wrap;gap:0.4rem;">
+        \${sectionResults.map(r => \`
+          <span style="font-size:0.72rem;padding:0.25rem 0.6rem;border-radius:10px;font-weight:600;
+            background:\${r.ok?'rgba(26,122,74,0.12)':'rgba(192,57,43,0.1)'};
+            color:\${r.ok?'#1A7A4A':'#C0392B'};
+            border:1px solid \${r.ok?'rgba(26,122,74,0.2)':'rgba(192,57,43,0.2)'};">
+            \${r.ok?'✓':'✗'} \${r.label}
+          </span>\`).join('')}
+      </div>
+    </div>
+    <button class="confirm-map-btn" onclick="nextPhase()">→ Siguiente fase: Detección de Riesgo</button>
+  \`;
+  document.getElementById('submit-psico-btn').style.display = 'none';
+}
+
+
+// ══════════════════════════════════════
+// PHASE 5: MCQ (clinical detection)
+// ══════════════════════════════════════
+function renderMCQ(p, c) {
+  const q = p.questions[state.mcqCurrent];
+  c.innerHTML = `
+    <div class="phase-header">
+      <div class="phase-number">FASE ${p.num} · ${p.name} · Caso ${state.mcqCurrent+1}/${p.questions.length}</div>
+      <div class="phase-title">${p.title}</div>
+      <div class="phase-desc">${p.desc}</div>
+    </div>
+
+    <div class="scene-card">
+      <div class="scene-img" style="background:linear-gradient(160deg,${q.scene.bg},#0F2240);">
+        <div style="font-size:5rem;">${q.scene.emoji}</div>
+      </div>
+      <div class="scene-body">
+        <div class="scene-situation">${q.scene.situation}</div>
+        <div class="scene-question">${q.question}</div>
+        <div class="options-grid" id="options-grid">
+          ${q.options.map((opt, i) => `
+            <button class="option-btn" id="opt-${i}" onclick="answerMCQ(${i})">
+              <span class="option-letter">${String.fromCharCode(65+i)}</span>
+              ${opt.text}
+            </button>
+          `).join('')}
+        </div>
+        <div class="feedback-box" id="mcq-feedback"></div>
+        <button class="next-btn" id="mcq-next">
+          ${state.mcqCurrent < p.questions.length-1 ? '→ Siguiente caso' : '→ Ver informe final'}
+        </button>
+      </div>
+    </div>
+  `;
+}
+
+function answerMCQ(idx) {
+  if (state.mcqAnswered) return;
+  state.mcqAnswered = true;
+
+  const p = PHASES[state.phase];
+  const q = p.questions[state.mcqCurrent];
+  const opts = document.querySelectorAll('.option-btn');
+
+  opts.forEach((btn, i) => {
+    btn.disabled = true;
+    if (q.options[i].correct) btn.classList.add(i === idx ? 'correct' : 'reveal');
+    else if (i === idx && !q.options[i].correct) btn.classList.add('wrong');
+  });
+
+  const isCorrect = q.options[idx].correct;
+  const fb = document.getElementById('mcq-feedback');
+  fb.className = `feedback-box ${isCorrect ? 'correct' : 'wrong'}`;
+  fb.style.display = 'block';
+  fb.innerHTML = `
+    <div class="feedback-title">${isCorrect ? '✓ Correcto' : '✗ Incorrecto'}</div>
+    ${isCorrect ? q.feedbackCorrect : q.feedbackWrong}
+  `;
+
+  if (isCorrect) { state.score += 30; state.correct++; }
+  else { state.wrong++; deductTime(10); }
+  document.getElementById('score-display').textContent = state.score;
+
+  const nextBtn = document.getElementById('mcq-next');
+  nextBtn.style.display = 'block';
+  nextBtn.onclick = () => {
+    if (state.mcqCurrent < p.questions.length - 1) {
+      state.mcqCurrent++;
+      state.mcqAnswered = false;
+      renderMCQ(p, document.getElementById('phase-container'));
+    } else {
+      nextPhase();
+    }
+  };
+}
+
+// ══════════════════════════════════════
+// END GAME
+// ══════════════════════════════════════
+function endGame() {
+  clearInterval(state.timerInterval);
+  const total = state.correct + state.wrong;
+  const pct = total > 0 ? Math.round((state.correct / total) * 100) : 0;
+
+  document.getElementById('final-score-num').textContent = state.score;
+  document.getElementById('res-correct').textContent = state.correct;
+  document.getElementById('res-wrong').textContent = state.wrong;
+  document.getElementById('res-time').textContent = getTimerFormatted();
+
+  // Ring animation
+  const circumference = 2 * Math.PI * 60;
+  const offset = circumference - (pct / 100) * circumference;
+  setTimeout(() => {
+    document.getElementById('ring-progress').style.strokeDashoffset = offset;
+    const col = pct >= 80 ? '#14A89E' : pct >= 60 ? '#F5A623' : '#C0392B';
+    document.getElementById('ring-progress').setAttribute('stroke', col);
+  }, 300);
+
+  let title, subtitle, verdictTitle, verdictText;
+  if (pct >= 85) {
+    title = '🏆 Psicólogo/a de campo sobresaliente';
+    subtitle = `Con ${pct}% de efectividad, tus decisiones protegieron a las personas más vulnerables. Estás lista/o para intervenir en emergencias reales.`;
+    verdictTitle = 'Fortalezas identificadas';
+    verdictText = 'Aplicaste correctamente el mapeo psicosocial, prioristaste sin prejuicios, activaste la red comunitaria y detectaste riesgo clínico con criterio. El trauma vicario será tu próximo reto a trabajar.';
+  } else if (pct >= 65) {
+    title = '✅ Intervención efectiva con áreas a fortalecer';
+    subtitle = `Con ${pct}% de efectividad, tu intervención fue sólida. Algunas decisiones costaron tiempo valioso o dejaron casos sin atención adecuada.`;
+    verdictTitle = 'Áreas a reforzar';
+    verdictText = 'Revisa especialmente: el orden correcto de la psicoeducación, los criterios de disociación vs. duelo normal, y cómo priorizar el mapeo sin dejarte llevar por quien más habla.';
+  } else {
+    title = '⚠️ Intervención incompleta — revisar conceptos';
+    subtitle = `Con ${pct}% de efectividad, tu intervención tuvo dificultades significativas. Las personas más vulnerables pudieron quedar sin atención.`;
+    verdictTitle = 'Conceptos a reforzar urgentemente';
+    verdictText = 'Repasa: criterios de vulnerabilidad en mapeo psicosocial, qué preguntar y qué no en la primera aproximación, la diferencia entre duelo normal y complicado, y el protocolo de riesgo suicida.';
+  }
+
+  document.getElementById('results-title').textContent = title;
+  document.getElementById('results-subtitle').textContent = subtitle;
+  document.getElementById('verdict-title').textContent = verdictTitle;
+  document.getElementById('verdict-text').textContent = verdictText;
+
+  document.getElementById('score-display').textContent = state.score;
+  showScreen('results');
+}
+
+// Init
+updateTimerDisplay();
+</script>
+</body>
+</html>
